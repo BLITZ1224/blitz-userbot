@@ -5,18 +5,19 @@ import google.generativeai as genai
 from pyrogram import Client, filters, idle
 from flask import Flask
 from threading import Thread
+from datetime import datetime
 
 # --- RENDER PORT SETUP ---
 web = Flask(__name__)
 @web.route('/')
-def home(): return "BLITZ AI Assistant is Live!"
+def home(): return "BLITZ AI Assistant is Running!"
 
 def run_web():
     port = int(os.environ.get("PORT", 10000))
     web.run(host='0.0.0.0', port=port)
 
 # --- AI CONFIGURATION ---
-GEMINI_KEY = "AlzaSyC_NcH3jpOFjv_8439xT_Gd0lkm9eLacfU" #
+GEMINI_KEY = "AlzaSyC_NcH3jpOFjv_8439xT_Gd0lkm9eLacfU" 
 genai.configure(api_key=GEMINI_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -27,37 +28,41 @@ STRING_SESSION = "BQHyFf0AErKl8lfBlk9HNLMV0_TTGH92io0UBo6-bXclv3o1AJO4-wZbGArXYR
 
 app = Client("blitz_session", api_id=API_ID, api_hash=API_HASH, session_string=STRING_SESSION, in_memory=True)
 
+# --- TRACKING ---
+last_message_time = {}
+
 # --- SPECIAL USERS ---
 GF_USERNAME = "thwe014"
 BEST_FRIEND = "Goozxak12"
 
-# --- AI BRAIN (INSTRUCTIONS) ---
-def get_ai_response(text, sender_username, is_me=False):
+def get_ai_response(text, sender_username):
+    # ယောကျ်ားလေး စရိုက် သတ်မှတ်ချက်
     persona = (
-        "မင်းနာမည်က တိုးဝေအောင် (Blitz) ရဲ့ AI Assistant ပါ။ "
-        "တိုးဝေအောင်က မနက် ၆ ကနေ ညနေ ၆:၄၅ အထိ ကုမ္မဏီအလုပ်လုပ်ပါတယ်။ ည ၁၀ နာရီအထိ Streamer လုပ်ပါတယ်။ "
-        f"အခု စာပို့တဲ့သူက @{sender_username} ပါ။ "
+        "မင်းက 'တိုးဝေအောင်' (Blitz) ဆိုတဲ့ ယောကျ်ားလေးရဲ့ AI Assistant ပါ။ \n"
+        "တိုးဝေအောင်က မနက် ၆ ကနေ ညနေ ၆:၄၅ ထိ ကုမ္မဏီအလုပ်လုပ်ပြီး၊ ည ၁၀ ထိ Streamer လုပ်ပါတယ်။ \n"
+        "စည်းမျဉ်းများ: \n"
+        "- မိန်းကလေးသံ 'ရှင့်'၊ 'ရှင်' လုံးဝ မသုံးရ။ \n"
+        "- ယောကျ်ားလေး ပီပီသသ 'ဗျာ'၊ 'ခင်ဗျ' သို့မဟုတ် ပေါ့ပေါ့ပါးပါးပဲ ပြောပါ။ \n"
+        "- မြန်မာစာမဟုတ်ရင် မြန်မာလို ဘာသာပြန်ပေးပါ။ \n"
     )
     
     if sender_username == GF_USERNAME:
-        persona += "သူက တိုးဝေအောင်ရဲ့ ကောင်မလေးပါ။ အချိုသာဆုံးပြန်ပြောပါ။ နောက်ဆုံးမှာ 'ဒါက ကိုကို့ကိုယ်စား AI က ပြန်ပေးနေတာပါနော်' လို့ ထည့်ပြောပါ။"
+        persona += "စာပို့သူက ကောင်မလေးပါ။ 'သဲလေး' လို့ခေါ်ပြီး ချိုချိုသာသာပြောပါ။ နောက်ဆုံးမှာ 'ကိုကို့ကိုယ်စား AI က ပြန်ပေးတာပါ' လို့ ထည့်ပြောပါ။"
     elif sender_username == BEST_FRIEND:
-        persona += "သူက အရင်းနှီးဆုံးသူငယ်ချင်း 'ယဖ' ပါ။ ကြိုက်သလို ရင်းနှီးပွင့်လင်းစွာ ပြောပါ။ ဆဲရင်လည်း ပြန်ဆဲလို့ရပါတယ်။"
+        persona += "စာပို့သူက အရင်းနှီးဆုံးသူငယ်ချင်း 'ယဖ' ပါ။ ရင်းနှီးပွင့်လင်းစွာ ဆဲချင်လည်းပြန်ဆဲပြီး ပြောပါ။"
     elif "blitz" in text.lower():
-        persona += "သူက Fan တစ်ယောက်ပါ။ ယဉ်ယဉ်ကျေးကျေးနဲ့ Streamer တစ်ယောက်လို ပြန်ဖြေပေးပါ။"
+        persona += "စာပို့သူက Fan ဖြစ်လို့ ယဉ်ယဉ်ကျေးကျေး ပြန်ဖြေပါ။"
     else:
-        persona += "ယဉ်ယဉ်ကျေးကျေး ပြန်ဖြေပါ။ ဆဲလာရင်တော့ လျစ်လျူရှုပါ။ မြန်မာစာမဟုတ်ရင် မြန်မာလို ဘာသာပြန်ပေးပါ။"
+        persona += "ယဉ်ယဉ်ကျေးကျေး ပြန်ဖြေပါ။ ဆဲလာရင် လျစ်လျူရှုပါ။"
 
-    prompt = f"{persona}\n\nUser text: {text}"
+    prompt = f"{persona}\n\nUser: {text}"
     response = model.generate_content(prompt)
     return response.text
 
-# --- SECURITY: LINK CHECKER ---
+# --- SECURITY ---
 def is_unsafe(text):
-    # Link ပါမပါ စစ်မယ်
     links = re.findall(r'(https?://[^\s]+)', text)
-    # ဥပမာ- .exe သို့မဟုတ် မသင်္ကာစရာ စာလုံးများ
-    unsafe_patterns = [".exe", ".apk", "free-gift", "login-account", "hack"]
+    unsafe_patterns = [".exe", ".apk", "free-gift", "hack", "login"]
     for link in links:
         if any(pattern in link.lower() for pattern in unsafe_patterns):
             return True
@@ -67,30 +72,42 @@ def is_unsafe(text):
 @app.on_message(filters.private)
 async def handle_message(client, message):
     if not message.text: return
+    chat_id = message.chat.id
 
-    # Link Security Check
+    # မင်းကိုယ်တိုင် (တိုးဝေအောင်) စာပြန်ရင် AI ကို ရပ်ခိုင်းမယ်
+    if message.from_user.is_self:
+        last_message_time[chat_id] = datetime.now()
+        return
+
+    # Link Security
     if is_unsafe(message.text):
         await message.delete()
         await message.reply_text("⚠️ **Security Alert:** မသင်္ကာစရာ Link ဖြစ်လို့ ဖျက်လိုက်ပါပြီ။")
         return
 
-    # Saved Messages (For link scanning)
-    if message.chat.id == (await client.get_me()).id:
-        if "စစ်အုန်း" in message.text:
-            await message.reply_text("🔍 Link ကို စစ်ဆေးနေပါတယ်... အန္တရာယ်မရှိတာ တွေ့ရပါတယ်။ (AI Analysis Demo)")
-        return
+    # ၂ မိနစ် Timer
+    arrival_time = datetime.now()
+    last_message_time[chat_id] = arrival_time
+    
+    await asyncio.sleep(120) # ၂ မိနစ် စောင့်ဆိုင်း
 
-    # AI Auto Reply (Not for me)
-    if not message.from_user.is_self:
-        # ၂ မိနစ် delay logic ကို ဒီမှာ ထည့်မထားသေးဘူး (အရင်ဆုံး AI အလုပ်လုပ်အောင် စမ်းမယ်)
+    # ၂ မိနစ်ပြည့်ချိန်မှာ မင်းဘက်က စာပြန်ထားလား ထပ်စစ်မယ်
+    if last_message_time.get(chat_id) == arrival_time:
+        # မင်း Typing လုပ်နေလား သို့မဟုတ် စာပြန်ပြီးပြီလား စစ်မယ်
+        history = [m async for m in client.get_chat_history(chat_id, limit=1)]
+        if history and history[0].from_user.is_self:
+            return
+
+        # AI ပြန်မယ်
         response = get_ai_response(message.text, message.from_user.username)
-        await asyncio.sleep(2) # လူလိုဖြစ်အောင် ခဏစောင့်ပြီးမှ ပို့မယ်
+        await client.send_chat_action(chat_id, "typing")
+        await asyncio.sleep(2)
         await message.reply_text(response)
 
 async def main():
     Thread(target=run_web).start()
     await app.start()
-    print("✅ BLITZ AI Assistant is Online & Live!")
+    print("🚀 BLITZ AI BOT IS LIVE!")
     await idle()
 
 if __name__ == "__main__":
