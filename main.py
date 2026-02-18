@@ -9,14 +9,16 @@ from datetime import datetime
 import pytz
 
 # --- [၁] AI CONFIGURATION ---
+# Gemini API Key ကိုလည်း အသေထည့်ပေးထားတယ်
 GEMINI_KEY = "AlzaSyC_NcH3jpOFjv_8439xT_Gd0lkm9eLacfU" 
 genai.configure(api_key=GEMINI_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-# --- [၂] BOT SETUP (ENVIRONMENT VARIABLES) ---
-API_ID = int(os.environ.get("API_ID", 0))
-API_HASH = os.environ.get("API_HASH")
-SESSION = os.environ.get("SESSION")
+# --- [၂] BOT SETUP (အချက်အလက်အားလုံးကို အသေထည့်လိုက်ပြီ) ---
+# မင်းပေးထားတဲ့ ပုံထဲက အချက်အလက်တွေအတိုင်းပါ
+API_ID = 32642557 #
+API_HASH = "2790877135ea0991a392fe6a0d285c27" #
+SESSION = "BQHyFf0ApP8EWZmGjpLEVSDKU6EDuuBUbBNVjCLCT_jcQ3bBw2_3MY9T85ZJA45WhceGEu3zte3iB3dkLsMb4KweEB8twUHN7PuWUSZ8lPPMuYwemytCFg4sRRROPgJbBpsNuavYgTYgxW5Xq8GxxWkj3KfcgJhINV93r0bxkZ2B_x8WhRkB-wnKDyNOPrc-50asOfByxZ0YrOQsIa8Pxhu76ZmKoWeWjcBnH1Zvw4ZRZqLv7YrUN0XNo1nN4Chj6RGtsh2Bg7-ygC1ZwcEKZp41loCydG7wGQf_wFmhU1cR6Pp4mzSzZ760TpjizFpXjCeANzsCSJvkfdVO_IKnDjBOnbrwAAAAGQ1m1ZAA" #
 
 app = Client(
     "blitz_ultra_twin",
@@ -32,7 +34,7 @@ GIRLFRIEND = "thwe014"      # Baby
 
 last_message_time = {}
 
-# --- [၃] RENDER PORT HACKER (အပိတ်မခံရစေရန်) ---
+# --- [၃] RENDER PORT HACKER ---
 def start_port_listener():
     try:
         port = int(os.environ.get("PORT", 10000))
@@ -53,7 +55,7 @@ async def blitz_ai_handler(client, message):
     user = message.from_user
     text = message.text
 
-    # Link Scanner (စကားပြောနေရင်း Link ပါလာရင် သတိပေးမယ်)
+    # Link Scanner
     if re.search(r'http[s]?://', text):
         await message.reply("⚠️ ဒီ Link က အန္တရာယ်ရှိနိုင်လို့ မနှိပ်သေးဘဲ ခဏစောင့်ပေးပါ။")
 
@@ -62,16 +64,13 @@ async def blitz_ai_handler(client, message):
     last_message_time[chat_id] = arrival_time
     await asyncio.sleep(120) 
 
-    # ၂ မိနစ်ပြည့်လို့ မင်းဘက်က ဘာစာမှ မပို့ထားရင် AI က ဝင်ဖြေမယ်
     if last_message_time.get(chat_id) == arrival_time:
         history = [m async for m in client.get_chat_history(chat_id, limit=1)]
         if history and history[0].from_user.is_self: return
 
-        # စာမရိုက်ခင် Typing... ပြခြင်း (စက္ကန့်အနည်းငယ် random စောင့်မယ်)
         await app.send_chat_action(chat_id, enums.ChatAction.TYPING)
         await asyncio.sleep(random.uniform(3, 7))
 
-        # မြန်မာစံတော်ချိန်နဲ့ Blitz ရဲ့ အခြေအနေကို သတ်မှတ်ခြင်း
         tz = pytz.timezone('Asia/Rangoon')
         now_mm = datetime.now(tz)
         h = now_mm.hour
@@ -81,15 +80,13 @@ async def blitz_ai_handler(client, message):
         elif 18 <= h < 22:
             status = "အခု MLBB/PUBG stream နေတာ။ ဂိမ်းဆော့ရင်း ခဏအားတုန်း ပြန်ဖြေတာ။"
         else:
-            status = "အခု အိပ်ရာထဲမှာ အနားယူရင်း ဖုန်းကြည့်နေတာ။ (အိပ်နေတယ်လို့ မပြောနဲ့၊ ကိုယ်တိုင် နိုးနေသလိုပဲ ပြောပါ)"
+            status = "အခု အိပ်ရာထဲမှာ အနားယူရင်း ဖုန်းကြည့်နေတာ။"
 
-        # AI Identity Context
         identity = (
             f"မင်းက Blitz (တိုးဝေအောင်) ပါ။ ရန်ကုန်သား၊ မြဝတီမှာနေတယ်။ စရိုက်က ဟာသနှောတယ်၊ လိုရင်းပဲပြောတယ်။ "
             f"မလေးမစာလုပ်တာနဲ့ လာဆဲတာ မကြိုက်ဘူး။ လက်ရှိအခြေအနေ: {status}"
         )
 
-        # Relationship Logic
         if user.username == TARGET_FRIEND:
             prompt = f"{identity} အခု စကားပြောနေတာက မင်းသူငယ်ချင်း 'ယဖ' (@Goozxak12)။ သူ့ကို 'ငါ/မင်း' သုံး၊ ဆဲချင်လဲပြန်ဆဲ၊ အပွင့်လင်းဆုံး ရင်းနှီးတဲ့ပုံစံနဲ့ ဖြေပါ။ User: {text}"
         elif user.username == GIRLFRIEND:
@@ -101,12 +98,6 @@ async def blitz_ai_handler(client, message):
             response = model.generate_content(prompt)
             await message.reply_text(response.text)
         except: pass
-
-# Saved Messages ထဲမှာ Link စစ်ဖို့ Tools
-@app.on_message(filters.me & filters.chat("me") & filters.text)
-async def manual_tools(client, message):
-    if "စစ်အုန်း" in message.text:
-        await message.reply("🔍 Security Scan: ဒီ Link က Phishing/Hack Link ဖြစ်နိုင်ခြေ ရှိပါတယ်။ မနှိပ်တာ အကောင်းဆုံးပါ။")
 
 async def main():
     start_port_listener()
