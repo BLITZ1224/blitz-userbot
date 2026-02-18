@@ -13,10 +13,12 @@ web = Flask(__name__)
 def home(): return "BLITZ AI Assistant is Running!"
 
 def run_web():
+    # Render port setup
     port = int(os.environ.get("PORT", 10000))
     web.run(host='0.0.0.0', port=port)
 
 # --- AI CONFIGURATION ---
+# Your Gemini API Key
 GEMINI_KEY = "AlzaSyC_NcH3jpOFjv_8439xT_Gd0lkm9eLacfU" 
 genai.configure(api_key=GEMINI_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
@@ -26,7 +28,14 @@ API_ID = 32642557
 API_HASH = "2790877135ea0991a392fe6a0d285c27"
 STRING_SESSION = "BQHyFf0AErKl8lfBlk9HNLMV0_TTGH92io0UBo6-bXclv3o1AJO4-wZbGArXYRBf3QJ0YAzvC9i0n31ChVH7m_FmKGmaZ8wBwhPGbUcrphFjT6YBp3P3bl5aqe_jz-UyQ3N4z4vCNiPxH_rNp8cb_5W_VaOlk93LwToZ6ZT0ASySlTnGAYvETgu_tsUq9M2hork3mq6ZnPieFL-mtWu2EYwC02iZwKhGre0UvsaBdPykR7uN4NljK15C3ByNa5OFDtCxDmcqlKGI0oTIdvzBe3aRdb175WrbbcRVr-V9fDrhImcWS_Se1GW_fbFDxCbS_N2HJytzfmb7bCE3Lgjgx2s9s6dKhQAAAAGQ1m1ZAA"
 
-app = Client("blitz_session", api_id=API_ID, api_hash=API_HASH, session_string=STRING_SESSION, in_memory=True)
+# Session issues fixed with in_memory=True
+app = Client(
+    "blitz_session", 
+    api_id=API_ID, 
+    api_hash=API_HASH, 
+    session_string=STRING_SESSION, 
+    in_memory=True
+)
 
 # --- TRACKING ---
 last_message_time = {}
@@ -36,7 +45,7 @@ GF_USERNAME = "thwe014"
 BEST_FRIEND = "Goozxak12"
 
 def get_ai_response(text, sender_username):
-    # ယောကျ်ားလေး စရိုက် သတ်မှတ်ချက်
+    # Male Persona Setup
     persona = (
         "မင်းက 'တိုးဝေအောင်' (Blitz) ဆိုတဲ့ ယောကျ်ားလေးရဲ့ AI Assistant ပါ။ \n"
         "တိုးဝေအောင်က မနက် ၆ ကနေ ညနေ ၆:၄၅ ထိ ကုမ္မဏီအလုပ်လုပ်ပြီး၊ ည ၁၀ ထိ Streamer လုပ်ပါတယ်။ \n"
@@ -68,13 +77,19 @@ def is_unsafe(text):
             return True
     return False
 
+# --- COMMANDS ---
+@app.on_message(filters.command("ping", prefixes=".") & filters.me)
+async def ping_pong(_, message):
+    # Check if bot is alive
+    await message.edit("🚀 **BLITZ Bot is Active!**\n📶 Hosting: Render Cloud")
+
 # --- MESSAGE HANDLER ---
 @app.on_message(filters.private)
 async def handle_message(client, message):
     if not message.text: return
     chat_id = message.chat.id
 
-    # မင်းကိုယ်တိုင် (တိုးဝေအောင်) စာပြန်ရင် AI ကို ရပ်ခိုင်းမယ်
+    # If I reply personally
     if message.from_user.is_self:
         last_message_time[chat_id] = datetime.now()
         return
@@ -85,20 +100,18 @@ async def handle_message(client, message):
         await message.reply_text("⚠️ **Security Alert:** မသင်္ကာစရာ Link ဖြစ်လို့ ဖျက်လိုက်ပါပြီ။")
         return
 
-    # ၂ မိနစ် Timer
+    # 2-Minute Timer Logic
     arrival_time = datetime.now()
     last_message_time[chat_id] = arrival_time
     
-    await asyncio.sleep(120) # ၂ မိနစ် စောင့်ဆိုင်း
+    await asyncio.sleep(120) 
 
-    # ၂ မိနစ်ပြည့်ချိန်မှာ မင်းဘက်က စာပြန်ထားလား ထပ်စစ်မယ်
+    # Check if AI should still reply
     if last_message_time.get(chat_id) == arrival_time:
-        # မင်း Typing လုပ်နေလား သို့မဟုတ် စာပြန်ပြီးပြီလား စစ်မယ်
         history = [m async for m in client.get_chat_history(chat_id, limit=1)]
         if history and history[0].from_user.is_self:
             return
 
-        # AI ပြန်မယ်
         response = get_ai_response(message.text, message.from_user.username)
         await client.send_chat_action(chat_id, "typing")
         await asyncio.sleep(2)
@@ -107,7 +120,7 @@ async def handle_message(client, message):
 async def main():
     Thread(target=run_web).start()
     await app.start()
-    print("🚀 BLITZ AI BOT IS LIVE!")
+    print("🛰️ BLITZ AI Bot starting on Render...")
     await idle()
 
 if __name__ == "__main__":
