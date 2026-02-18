@@ -8,34 +8,45 @@ from pyrogram import Client, filters, idle, enums
 from datetime import datetime
 import pytz
 
-# --- [ AI Config ] ---
-genai.configure(api_key="AlzaSyC_NcH3jpOFjv_8439xT_Gd0lkm9eLacfU")
+# --- [၁] AI CONFIGURATION ---
+# Gemini API Key (မင်းပေးထားတဲ့ Key)
+genai.configure(api_key="AIzaSyC_NcH3jpOFjv_8439xT_Gd0Ikm9eLacfU")
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-# --- [ Bot Credentials ] ---
-# မင်းပေးထားတဲ့ အချက်အလက်တွေနဲ့ Session String အသေထည့်ထားတယ်
+# --- [၂] BOT SETUP (အချက်အလက်အားလုံး အသေထည့်ထားသည်) ---
+# မင်းပို့ထားတဲ့ ပုံတွေထဲက အချက်အလက်တွေ အတိအကျဖြစ်သည်
+API_ID = 32642557 
+API_HASH = "2790877135ea0991a392fe6a0d285c27"
+# အခုလေးတင်ထုတ်ထားတဲ့ String အသစ်
+SESSION = "BQHyFf0AvLI0i1mE-pxqTQaVfwazaV1IrJtt0bJO4WEz00AdnIBnG38kaQecTyWXojIe4lTZJ4gg7Z4m84OQjkhZVh5Lz9ux_9w_wgj4GBfr0omilL9Z2MLch2jBFINja_2FtE7qAqKwhM7ARd7j5Za-kF_076uB4ZDaW2S0VE7dixyyCLJBZ3TB1oGWw_jIx7YIhCNylLUa4id5Up6yucQE0hiY_5_scrsxQ4Dbe7MeFNVC1R02K13WLqOBhSataW0ljMwqDaPS-uWk5GqHutZ4Ff6db5jXPNzEvXNz_4YrNHR1L8ceBEuXYJanXWDn9YY8A5FjpNcGx8X52N9URkE9bXryRAAAAAGQ1m1ZAA"
+
 app = Client(
-    "blitz_twin",
-    api_id=32642557,
-    api_hash="2790877135ea0991a392fe6a0d285c27",
-    session_string="BQHyFf0ApP8EWZmGjpLEVSDKU6EDuuBUbBNVjCLCT_jcQ3bBw2_3MY9T85ZJA45WhceGEu3zte3iB3dkLsMb4KweEB8twUHN7PuWUSZ8lPPMuYwemytCFg4sRRROPgJbBpsNuavYgTYgxW5Xq8GxxWkj3KfcgJhINV93r0bxkZ2B_x8WhRkB-wnKDyNOPrc-50asOfByxZ0YrOQsIa8Pxhu76ZmKoWeWjcBnH1Zvw4ZRZqLv7YrUN0XNo1nN4Chj6RGtsh2Bg7-ygC1ZwcEKZp41loCydG7wGQf_wFmhU1cR6Pp4mzSzZ760TpjizFpXjCeANzsCSJvkfdVO_IKnDjBOnbrwAAAAGQ1m1ZAA",
+    "blitz_ultra_twin",
+    api_id=API_ID,
+    api_hash=API_HASH,
+    session_string=SESSION,
     in_memory=True
 )
 
-# --- [ Usernames အတိအကျ ] ---
+# မင်းပေးထားတဲ့ Username များ
 TARGET_FRIEND = "Goozxak12" # ယဖ
 GIRLFRIEND = "thwe014"      # Baby
+
 last_message_time = {}
 
+# Render Port အတွက်
 def start_port_listener():
     try:
         port = int(os.environ.get("PORT", 10000))
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(('0.0.0.0', port))
         s.listen(1)
         print(f"⚓ Render Port {port} bound successfully.")
-    except: pass
+    except Exception as e:
+        print(f"📡 Port Note: {e}")
 
+# --- [၃] AI DIGITAL TWIN LOGIC ---
 @app.on_message(filters.private & ~filters.me)
 async def blitz_ai_handler(client, message):
     if not message.text: return
@@ -53,7 +64,7 @@ async def blitz_ai_handler(client, message):
     last_message_time[chat_id] = arrival_time
     await asyncio.sleep(120) 
 
-    # ၂ မိနစ်အတွင်း ကိုယ်တိုင် စာမပြန်မှ AI က ဝင်ဖြေမယ်
+    # ၂ မိနစ်အတွင်း ကိုယ်တိုင် စာမပြန်ထားမှ AI က ဝင်ဖြေမယ်
     if last_message_time.get(chat_id) == arrival_time:
         history = [m async for m in client.get_chat_history(chat_id, limit=1)]
         if history and history[0].from_user.is_self: return
@@ -63,20 +74,28 @@ async def blitz_ai_handler(client, message):
 
         # အချိန်အလိုက် Status သတ်မှတ်ခြင်း
         tz = pytz.timezone('Asia/Rangoon')
-        h = datetime.now(tz).hour
-        if 6 <= h < 18: status = "ကုမ္ပဏီမှာ အလုပ်လုပ်နေတုန်း (အလုပ်အရမ်းရှုပ်နေတယ်)"
-        elif 18 <= h < 22: status = "ဂိမ်း Stream နေတုန်း (MLBB/PUBG ဆော့နေတယ်)"
-        else: status = "အိပ်ရာထဲမှာ အနားယူနေတုန်း"
+        now_mm = datetime.now(tz)
+        h = now_mm.hour
 
-        identity = f"မင်းက Blitz (တိုးဝေအောင်) ပါ။ ရန်ကုန်သား၊ မြဝတီမှာနေတယ်။ စရိုက်က ဟာသနှောတယ်၊ လိုရင်းပဲပြောတယ်။ အခြေအနေ: {status}"
+        if 6 <= h < 18:
+            status = "ကုမ္ပဏီမှာ အလုပ်လုပ်နေတာမို့ လိုရင်းပဲ ပြောမယ်။"
+        elif 18 <= h < 22:
+            status = "အခု MLBB/PUBG stream နေတာ။ ဂိမ်းဆော့ရင်း ခဏအားတုန်း ပြန်ဖြေတာ။"
+        else:
+            status = "အခု အိပ်ရာထဲမှာ အနားယူရင်း ဖုန်းကြည့်နေတာ။"
+
+        identity = (
+            f"မင်းက Blitz (တိုးဝေအောင်) ပါ။ ရန်ကုန်သား၊ မြဝတီမှာနေတယ်။ စရိုက်က ဟာသနှောတယ်၊ လိုရင်းပဲပြောတယ်။ "
+            f"မလေးမစာလုပ်တာနဲ့ လာဆဲတာ မကြိုက်ဘူး။ လက်ရှိအခြေအနေ: {status}"
+        )
 
         # Username အလိုက် Prompt ခွဲခြားခြင်း
         if user.username == TARGET_FRIEND:
-            prompt = f"{identity} အခုပြောနေတာက မင်းသူငယ်ချင်း 'ယဖ' (@Goozxak12) ပါ။ သူ့ကို 'ငါ/မင်း' သုံးပြီး အရမ်းရင်းနှီးတဲ့ပုံစံနဲ့ ဖြေပါ။ သူဆဲရင် ပြန်ဆဲပါ။ User ပြောတာက: {text}"
+            prompt = f"{identity} အခု စကားပြောနေတာက မင်းသူငယ်ချင်း 'ယဖ' (@Goozxak12)။ သူ့ကို 'ငါ/မင်း' သုံး၊ ဆဲချင်လဲပြန်ဆဲ၊ အပွင့်လင်းဆုံး ရင်းနှီးတဲ့ပုံစံနဲ့ ဖြေပါ။ User: {text}"
         elif user.username == GIRLFRIEND:
-            prompt = f"{identity} အခုပြောနေတာက မင်းမိန်းမ 'Baby' (@thwe014) ပါ။ သူ့ကို 'ကိုကို' လို့ သုံးပြီး 'Baby' လို့ ချစ်ချစ်ခင်ခင် ခေါ်ပါ။ User ပြောတာက: {text}"
+            prompt = f"{identity} အခုပြောနေတာက မင်းမိန်းမ (Baby) @thwe014။ 'ကိုကို' လို့သုံး၊ သူ့ကို 'Baby' လို့ခေါ်ပြီး အရမ်းချစ်ပြပါ။ User: {text}"
         else:
-            prompt = f"{identity} တခြားလူတွေကိုတော့ 'အစ်ကို' သုံးပြီး ယဉ်ကျေးစွာ လိုရင်းပဲ ဖြေပေးပါ။ User ပြောတာက: {text}"
+            prompt = f"{identity} တခြားလူတွေဆို 'အစ်ကို' သုံးပြီး ယဉ်ကျေးစွာ လိုရင်းပဲ ဖြေပါ။ User: {text}"
 
         try:
             response = model.generate_content(prompt)
