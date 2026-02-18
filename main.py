@@ -1,52 +1,32 @@
-import os
 import asyncio
-from flask import Flask
-from threading import Thread
-import google.generativeai as genai
 from pyrogram import Client, filters
 
-# 🌐 Render Web Server
-web_app = Flask('')
-@web_app.route('/')
-def home(): return "BLITZ UserBot is Alive!"
-def run_web(): web_app.run(host='0.0.0.0', port=10000)
+# မင်းရဲ့ အချက်အလက်တွေ
+API_ID = 32642557  
+API_HASH = "2790877135ea0991a392fe6a0d285c27"
+STRING_SESSION = "BQHyFf0AErKl8lfBlk9HNLMV0_TTGH92io0UBo6-bXclv3o1AJO4-wZbGArXYRBf3QJ0YAzvC9i0n31ChVH7m_FmKGmaZ8wBwhPGbUcrphFjT6YBp3P3bl5aqe_jz-UyQ3N4z4vCNiPxH_rNp8cb_5W_VaOlk93LwToZ6ZT0ASySlTnGAYvETgu_tsUq9M2hork3mq6ZnPieFL-mtWu2EYwC02iZwKhGre0UvsaBdPykR7uN4NljK15C3ByNa5OFDtCxDmcqlKGI0oTIdvzBe3aRdb175WrbbcRVr-V9fDrhImcWS_Se1GW_fbFDxCbS_N2HJytzfmb7bCE3Lgjgx2s9s6dKhQAAAAGQ1m1ZAA"
 
-# 🔑 Variables
-API_ID = int(os.environ.get("API_ID"))
-API_HASH = os.environ.get("API_HASH")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+# Bot ကို စတင်သတ်မှတ်ခြင်း
+app = Client(
+    "blitz_session",
+    api_id=API_ID,
+    api_hash=API_HASH,
+    session_string=STRING_SESSION
+)
 
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+# Bot အလုပ်လုပ်ကြောင်း စမ်းသပ်ရန် (.ping လို့ ရိုက်ကြည့်ပါ)
+@app.on_message(filters.command("ping", prefixes=".") & filters.me)
+async def ping_pong(_, message):
+    await message.edit("🚀 **BLITZ Bot is Active!**\n📶 Connection: Perfect")
 
-# ✅ Async Loop Error ကို ကျော်ဖို့ 
 async def main():
-    app = Client("blitz_session", api_id=API_ID, api_hash=API_HASH)
-    
-    SYSTEM_PROMPT = "မင်းက BLITZ ဖြစ်တယ်။ MLBB Chou Specialist တစ်ယောက်။ စာပြန်ရင် အေးဆေးနဲ့ လူကြီးဆန်ဆန်၊ ရင်းရင်းနှီးနှီး မြန်မာလိုပဲ ပြန်ပေးပါ။"
-
-    @app.on_message(filters.private & ~filters.me)
-    async def ai_auto_reply(client, message):
-        if not message.text: return
-        try:
-            response = model.generate_content(f"{SYSTEM_PROMPT} \n\n User message: {message.text}")
-            await client.send_chat_action(message.chat.id, "typing")
-            await asyncio.sleep(1.5) 
-            await message.reply(response.text)
-        except Exception as e: print(f"❌ Error: {e}")
-
-    print("⚡ BLITZ UserBot Starting...")
+    print("🛰️ Server ပေါ်မှာ BLITZ Bot ကို စတင်မောင်းနှင်နေပါပြီ...")
     await app.start()
-    print("✅ Bot is Online!")
-    await asyncio.Event().wait() # Bot ကို အမြဲပွင့်နေစေဖို့
+    print("✅ Bot Is Online!")
+    # Bot ကို အမြဲတမ်း ပွင့်နေစေဖို့ idle() ကို သုံးထားတယ်
+    from pyrogram.methods.utilities.idle import idle
+    await idle()
 
 if __name__ == "__main__":
-    # Web Server ကို နိုးထားမယ်
-    t = Thread(target=run_web)
-    t.daemon = True
-    t.start()
-    
-    # Python 3.14 error ကို ဖြေရှင်းဖို့ loop သစ်ဆောက်မယ်
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
