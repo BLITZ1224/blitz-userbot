@@ -1,52 +1,41 @@
 import asyncio
 import os
 import socket
-import random
-import re
 import google.generativeai as genai
 from pyrogram import Client, filters, idle, enums
 from datetime import datetime
 import pytz
 
-# --- [၁] AI CONFIGURATION ---
-# Gemini API Key (မင်းပေးထားတဲ့ Key)
-genai.configure(api_key="AIzaSyC_NcH3jpOFjv_8439xT_Gd0Ikm9eLacfU")
+# --- [ AI Configuration ] ---
+genai.configure(api_key="AlzaSyC_NcH3jpOFjv_8439xT_Gd0lkm9eLacfU")
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-# --- [၂] BOT SETUP (အချက်အလက်အားလုံး အသေထည့်ထားသည်) ---
-# မင်းပို့ထားတဲ့ ပုံတွေထဲက အချက်အလက်တွေ အတိအကျဖြစ်သည်
+# --- [ Telegram Setup ] ---
+# Session String မသုံးတော့ဘဲ Session ဖိုင်အဖြစ် သိမ်းမယ်
 API_ID = 32642557 
 API_HASH = "2790877135ea0991a392fe6a0d285c27"
-# အခုလေးတင်ထုတ်ထားတဲ့ String အသစ်
-SESSION = "BQHyFf0AvLI0i1mE-pxqTQaVfwazaV1IrJtt0bJO4WEz00AdnIBnG38kaQecTyWXojIe4lTZJ4gg7Z4m84OQjkhZVh5Lz9ux_9w_wgj4GBfr0omilL9Z2MLch2jBFINja_2FtE7qAqKwhM7ARd7j5Za-kF_076uB4ZDaW2S0VE7dixyyCLJBZ3TB1oGWw_jIx7YIhCNylLUa4id5Up6yucQE0hiY_5_scrsxQ4Dbe7MeFNVC1R02K13WLqOBhSataW0ljMwqDaPS-uWk5GqHutZ4Ff6db5jXPNzEvXNz_4YrNHR1L8ceBEuXYJanXWDn9YY8A5FjpNcGx8X52N9URkE9bXryRAAAAAGQ1m1ZAA"
 
 app = Client(
-    "blitz_ultra_twin",
+    "blitz_session", # ဒါက session ဖိုင်အမည်ဖြစ်သွားမယ်
     api_id=API_ID,
-    api_hash=API_HASH,
-    session_string=SESSION,
-    in_memory=True
+    api_hash=API_HASH
 )
 
-# မင်းပေးထားတဲ့ Username များ
-TARGET_FRIEND = "Goozxak12" # ယဖ
-GIRLFRIEND = "thwe014"      # Baby
+# Target Usernames
+TARGET_FRIEND = "Goozxak12"
+GIRLFRIEND = "thwe014"
 
 last_message_time = {}
 
-# Render Port အတွက်
 def start_port_listener():
     try:
         port = int(os.environ.get("PORT", 10000))
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(('0.0.0.0', port))
         s.listen(1)
         print(f"⚓ Render Port {port} bound successfully.")
-    except Exception as e:
-        print(f"📡 Port Note: {e}")
+    except: pass
 
-# --- [၃] AI DIGITAL TWIN LOGIC ---
 @app.on_message(filters.private & ~filters.me)
 async def blitz_ai_handler(client, message):
     if not message.text: return
@@ -55,25 +44,19 @@ async def blitz_ai_handler(client, message):
     user = message.from_user
     text = message.text
 
-    # Link Scanner
-    if re.search(r'http[s]?://', text):
-        await message.reply("⚠️ ဒီ Link က အန္တရာယ်ရှိနိုင်လို့ မနှိပ်သေးဘဲ ခဏစောင့်ပေးပါ။")
-
-    # ၂ မိနစ် (၁၂၀ စက္ကန့်) စောင့်မယ်
+    # ၂ မိနစ် စောင့်ဆိုင်းခြင်း
     arrival_time = datetime.now()
     last_message_time[chat_id] = arrival_time
     await asyncio.sleep(120) 
 
-    # ၂ မိနစ်အတွင်း ကိုယ်တိုင် စာမပြန်ထားမှ AI က ဝင်ဖြေမယ်
     if last_message_time.get(chat_id) == arrival_time:
         history = [m async for m in client.get_chat_history(chat_id, limit=1)]
         if history and history[0].from_user.is_self: return
 
         await app.send_chat_action(chat_id, enums.ChatAction.TYPING)
-        await asyncio.sleep(random.uniform(3, 7))
-
-        # အချိန်အလိုက် Status သတ်မှတ်ခြင်း
-        tz = pytz.timezone('Asia/Rangoon')
+        
+        # Myanmar Time Zone နဲ့ အချိန်စစ်ခြင်း (pytz သုံးထားတယ်)
+        tz = pytz.timezone('Asia/Yangon')
         now_mm = datetime.now(tz)
         h = now_mm.hour
 
@@ -84,18 +67,14 @@ async def blitz_ai_handler(client, message):
         else:
             status = "အခု အိပ်ရာထဲမှာ အနားယူရင်း ဖုန်းကြည့်နေတာ။"
 
-        identity = (
-            f"မင်းက Blitz (တိုးဝေအောင်) ပါ။ ရန်ကုန်သား၊ မြဝတီမှာနေတယ်။ စရိုက်က ဟာသနှောတယ်၊ လိုရင်းပဲပြောတယ်။ "
-            f"မလေးမစာလုပ်တာနဲ့ လာဆဲတာ မကြိုက်ဘူး။ လက်ရှိအခြေအနေ: {status}"
-        )
+        identity = f"မင်းက Blitz (တိုးဝေအောင်) ပါ။ ရန်ကုန်သား၊ မြဝတီမှာနေတယ်။ စရိုက်က ဟာသနှောတယ်၊ လိုရင်းပဲပြောတယ်။ လက်ရှိအခြေအနေ: {status}"
 
-        # Username အလိုက် Prompt ခွဲခြားခြင်း
         if user.username == TARGET_FRIEND:
-            prompt = f"{identity} အခု စကားပြောနေတာက မင်းသူငယ်ချင်း 'ယဖ' (@Goozxak12)။ သူ့ကို 'ငါ/မင်း' သုံး၊ ဆဲချင်လဲပြန်ဆဲ၊ အပွင့်လင်းဆုံး ရင်းနှီးတဲ့ပုံစံနဲ့ ဖြေပါ။ User: {text}"
+            prompt = f"{identity} အခု စကားပြောနေတာက သူငယ်ချင်း 'ယဖ'။ သူ့ကို 'ငါ/မင်း' သုံး၊ ဆဲရင်ပြန်ဆဲ၊ အရင်းနှီးဆုံးပုံစံနဲ့ ဖြေပါ။ User: {text}"
         elif user.username == GIRLFRIEND:
-            prompt = f"{identity} အခုပြောနေတာက မင်းမိန်းမ (Baby) @thwe014။ 'ကိုကို' လို့သုံး၊ သူ့ကို 'Baby' လို့ခေါ်ပြီး အရမ်းချစ်ပြပါ။ User: {text}"
+            prompt = f"{identity} အခုပြောနေတာက မိန်းမ (Baby) @thwe014။ 'ကိုကို' လို့သုံး၊ သူ့ကို 'Baby' လို့ခေါ်ပါ။ User: {text}"
         else:
-            prompt = f"{identity} တခြားလူတွေဆို 'အစ်ကို' သုံးပြီး ယဉ်ကျေးစွာ လိုရင်းပဲ ဖြေပါ။ User: {text}"
+            prompt = f"{identity} တခြားလူတွေကို 'အစ်ကို' သုံးပြီး ယဉ်ကျေးစွာ လိုရင်းပဲ ဖြေပါ။ User: {text}"
 
         try:
             response = model.generate_content(prompt)
@@ -105,7 +84,7 @@ async def blitz_ai_handler(client, message):
 async def main():
     start_port_listener()
     print("🛰️ Connecting to Telegram...")
-    await app.start()
+    await app.start() # ဒီနေရာမှာ ဖုန်းနံပါတ်နဲ့ OTP တောင်းပါလိမ့်မယ်
     print("✅ BLITZ ULTRA DIGITAL TWIN IS ONLINE!")
     await idle()
 
