@@ -22,3 +22,7 @@ musicbot/
 .env
 .trunk/
 previous_profiles/
+# OS specific binaries
+ffmpeg.exe
+ffprobe.exe
+ffplay.exe
