@@ -6,11 +6,17 @@ from threading import Thread
 from config import Config
 import strings
 
-# Render အတွက် Port Binding
+# --- Render အတွက် Port ပတ်သက်တဲ့အပိုင်း ---
 app = Flask('')
+
 @app.route('/')
-def home(): return "BLITZ USERBOT IS ONLINE! 🔥"
-def run(): app.run(host='0.0.0.0', port=8080)
+def home():
+    return "BLITZ USERBOT IS ONLINE! 🔥"
+
+def run():
+    # Render ကပေးတဲ့ dynamic PORT ကို ယူသုံးဖို့ ပြင်လိုက်တာပါ
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
 
 bot = Client("blitz_bot", Config.API_ID, Config.API_HASH, session_string=Config.SESSION)
 
@@ -47,7 +53,7 @@ async def song_tool(client, message):
     query = " ".join(message.command[1:])
     if not query: return await message.edit("သီချင်းနာမည် ရိုက်ဦးလေ သားကြီး!")
     await message.edit(f"🎶 '{query}' ကို ရှာနေတယ်...")
-    # ဤနေရာတွင် yt-dlp logic များကို ဆက်လက်ဖြည့်စွက်နိုင်သည်
+    # သားကြီး အရင်ကရေးဖူးတဲ့ yt-dlp logic တွေကို ဒီမှာ ထည့်လို့ရပါတယ်
 
 # --- ၅။ .tt (TikTok Link Processing) ---
 @bot.on_message(filters.me & filters.command("tt", prefixes=Config.PREFIX))
@@ -64,6 +70,7 @@ async def broadcast(client, message):
     await message.edit("📢 Broadcaster စနစ် စတင်နေပါပြီ...")
 
 if __name__ == "__main__":
+    # Flask Server ကို သီးသန့် Thread တစ်ခုနဲ့ Run မယ်
     Thread(target=run).start()
-    print("BLITZ USERBOT STARTING...")
+    print("BLITZ USERBOT STARTING... 🔥")
     bot.run()
