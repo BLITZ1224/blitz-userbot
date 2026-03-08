@@ -1,5 +1,8 @@
 import random
 
+# Logic အတွက် လိုအပ်သော Variable
+STICKER_REPLIES = []
+
 # 0. Core Replies (Error မတက်စေရန် မရှိမဖြစ်လိုအပ်သော Variable)
 BRO_REPLIES = [
     "ဟုတ်ကဲ့ သားကြီး!", 

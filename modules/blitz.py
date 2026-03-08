@@ -1,110 +1,121 @@
 import random
+import asyncio
+import datetime
+from pyrogram import Client, filters
+from modules.strings import (
+    GREETINGS, DOING_NOW, GAMING, WORK, ANIME, TECH, 
+    WEATHER, MOTIVATION, JOKES, FOOD, HEALTH, MONEY, 
+    SLEEP, MUSIC, INTERNET, BYE_MESSAGES, BRO_REPLIES, STICKER_REPLIES
+)
 
-# 0. Core & Sticker Replies (Error မတက်စေရန် မရှိမဖြစ်လိုအပ်သော Variable များ)
-BRO_REPLIES = [
-    "ဟုတ်ကဲ့ သားကြီး!", 
-    "ဘာခိုင်းမလဲ သားကြီး?", 
-    "Streaming By BLITZ မှ ကြိုဆိုပါတယ်ဗျာ!", 
-    "BLITZ အသင့်ရှိနေပါတယ်!",
-    "အမိန့်ရှိပါ သားကြီး!"
-]
+# Global Variables
+IS_RUNNING = True 
+USER_CHAT_COUNT = {}
+LAST_REPLIES = {}
+COOLDOWN_USERS = {} 
 
-# စတစ်ကာနဲ့ ပြန်ဖြေဖို့အတွက် (Sticker ID များ ထည့်သွင်းနိုင်သည်)
-STICKER_REPLIES = [
-    "CAACAgIAAxkBAAELzRxl5...", 
-    "CAACAgIAAxkBAAELzRxl6..."
-]
+def is_sleeping_time():
+    now = datetime.datetime.now()
+    # ည ၁ နာရီ မှ မနက် ၇ နာရီအတွင်း (Burmese Time)
+    return 1 <= now.hour < 7
 
-# 1. Greetings (နှုတ်ဆက်ခြင်း)
-GREETINGS = [
-    "မင်္ဂလာပါဗျာ၊ အဆင်ပြေရဲ့လား?", "ဟေး... သားကြီး နေကောင်းလား?", "ဟယ်လို... BLITZ ဒီမှာရှိတယ်နော်။",
-    "မင်္ဂလာရှိသော နေ့လေးဖြစ်ပါစေဗျာ။", "ဟိုး... လူကြီးမင်း ဘာကူညီပေးရမလဲ?", "နေကောင်းကြရဲ့လားဗျို့!",
-    "Hi ဗျ! စကားပြောဖို့ အမြဲအသင့်ပဲ။", "Morning ဗျာ! ဒီနေ့တော့ လန်းဆန်းနေတယ်မလား?"
-]
+# --- Control Commands (.on / .off) ---
+@Client.on_message(filters.me & filters.command("off", prefixes="."))
+async def stop_bot(client, message):
+    global IS_RUNNING
+    IS_RUNNING = False
+    await message.edit_text("❌ **Blitz AI Mode:** OFF")
 
-# 2. Doing Now (ဘာလုပ်နေလဲ)
-DOING_NOW = [
-    "အခုပဲ code လေးနည်းနည်း ရေးနေတာဗျ။", "စာရင်းအင်းတွေ နည်းနည်း စစ်နေလို့ပါ။", "MLBB ဆော့ဖို့ ပြင်နေတာဗျ။",
-    "Streaming အတွက် setup တွေ လုပ်နေတာ။", "ခဏနားရင်း သားကြီးနဲ့ စကားပြောနေတာလေ။", "Inventory စာရင်းတွေ ကြည့်နေတာဗျ။"
-]
+@Client.on_message(filters.me & filters.command("on", prefixes="."))
+async def start_bot(client, message):
+    global IS_RUNNING
+    IS_RUNNING = True
+    await message.edit_text("✅ **Blitz AI Mode:** ON")
 
-# 3. Gaming (ဂိမ်းအကြောင်း)
-GAMING = [
-    "All-Rounder BLITZ အသင့်ပဲ!", "Chou နဲ့ Freestyle ကွဲဖို့ ပြင်ထားလိုက်တော့။ 😉", "Rank Marathon ဆော့ကြမလား?",
-    "Paquito လာပြီနော်၊ လမ်းဖယ်ထား။", "ဂိမ်းဆော့ဖို့ဆို အမြဲအားတယ်ဗျာ။", "Hayabusa နဲ့ Fast Hand ပြရဦးမယ်။"
-]
+# --- Main Logic Handler ---
+@Client.on_message(filters.private & ~filters.me & ~filters.bot)
+async def blitz_handler(client, message):
+    global IS_RUNNING, USER_CHAT_COUNT, LAST_REPLIES, COOLDOWN_USERS
+    user_id = message.from_user.id
+    
+    # ၁။ Logic စစ်ဆေးခြင်း
+    if not IS_RUNNING or is_sleeping_time() or user_id in COOLDOWN_USERS:
+        return
 
-# 4. Work (အလုပ်အကြောင်း)
-WORK = [
-    "ကုမ္ပဏီအလုပ်တွေ နည်းနည်းရှုပ်နေလို့ ခဏစောင့်နော်။", "Inventory စာရင်းတွေ ပြန်ကြည့်နေတာ။", 
-    "စာရင်းအင်းက အမှားမခံလို့ သေချာစစ်နေရတယ်။", "Accounting logic တွေ စဉ်းစားနေတာ။", "အလုပ်များနေလို့ စာပြန်တာ နောက်ကျရင် ခွင့်လွှတ်ပါ။"
-]
+    # ၂။ တစ်ယောက်ကို အကြောင်း ၃၀ ကန့်သတ်ချက်
+    count = USER_CHAT_COUNT.get(user_id, 0)
+    if count >= 30:
+        return
 
-# 5. One Piece & Anime (ဝမ်းပိစ်)
-ANIME = [
-    "One Piece ကတော့ အမြဲတမ်း Legend ပဲနော်! 🏴‍☠️", "Coby ရဲ့ ဖွံ့ဖြိုးမှုကို ကြည့်ရတာ တကယ်မိုက်တယ်။",
-    "Luffy ရဲ့ Gear 5 ကတော့ အလန်းဆုံးပဲ။", "Zoro လိုပဲ လမ်းမှားနေတာလား သားကြီး?", "Chopper ကတော့ ချစ်ဖို့ အကောင်းဆုံးပဲ။"
-]
+    try:
+        # ၃။ လူနဲ့တူအောင် ၂၀ စက္ကန့် စောင့်မယ်
+        await asyncio.sleep(20)
+        
+        # သားကြီး ကိုယ်တိုင် စာပြန်ထားရင် Bot က ဝင်မရှုပ်တော့ဘူး
+        async for msg in client.get_chat_history(message.chat.id, limit=1):
+            if msg.from_user and msg.from_user.is_self:
+                return
 
-# 6. Coding & Tech (နည်းပညာ)
-TECH = [
-    "Python နဲ့ Automation လုပ်ရတာ တကယ်မိုက်တယ်နော်။", "Google Apps Script တွေရော အဆင်ပြေရဲ့လား?",
-    "Next.js နဲ့ Dashboard ဆောက်တာ စိတ်ဝင်စားစရာပဲ။", "Bug တွေကတော့ Developer တိုင်းရဲ့ ရန်သူပဲ။", "Node.js လား Python လား? နှစ်ခုလုံးက အားကိုးရပါတယ်။"
-]
+        # ၄။ Seen ပြခြင်း နှင့် Typing... ပြခြင်း
+        await client.read_chat_history(message.chat.id)
+        await client.send_chat_action(message.chat.id, "typing")
+        
+        # ၅။ Content Type အလိုက် အဖြေရွေးခြင်း
+        source = BRO_REPLIES # Default
+        reply_type = "text"
 
-# 7. Weather (ရာသီဥတု)
-WEATHER = [
-    "ဒီနေ့ ရာသီဥတုက အပြင်ထွက်ဖို့ သိပ်မကောင်းဘူးနော်။", "မိုးရွာနေရင်တော့ အိမ်မှာ ဂိမ်းဆော့တာ အကောင်းဆုံးပဲ။",
-    "နေပူရင်တော့ ရေများများသောက်ဖို့ မမေ့နဲ့ဦး။", "ရာသီဥတုကတော့ ပြောင်းလဲနေတာပဲ၊ ကျန်းမာရေး ဂရုစိုက်ပါ။"
-]
+        if message.sticker:
+            if STICKER_REPLIES:
+                source = STICKER_REPLIES
+                reply_type = "sticker"
+            else:
+                source = ["စတစ်ကာလေး မိုက်တယ်ဗျာ!"]
+        elif message.photo or message.video:
+            source = ["ပုံလေး (သို့) ဗီဒီယိုလေး တွေ့တယ်နော်၊ ခဏနေမှ သေချာကြည့်ပြီး ပြန်လိုက်မယ်။"]
+        else:
+            text = message.text.lower() if message.text else ""
+            
+            # Keyword Matching for Category
+            if any(k in text for k in ["hi", "hello", "ဟယ်လို", "နေကောင်း"]): source = GREETINGS
+            elif any(k in text for k in ["ဘာလုပ်", "doing", "လုပ်နေ"]): source = DOING_NOW
+            elif any(k in text for k in ["mlbb", "ဂိမ်း", "rank", "ဆော့"]): source = GAMING
+            elif any(k in text for k in ["အလုပ်", "စာရင်း", "company", "accounting"]): source = WORK
+            elif any(k in text for k in ["anime", "one piece", "luffy"]): source = ANIME
+            elif any(k in text for k in ["code", "python", "script", "bot", "tech"]): source = TECH
+            elif any(k in text for k in ["နေပူ", "မိုးရွာ", "ရာသီဥတု"]): source = WEATHER
+            elif any(k in text for k in ["စိတ်ညစ်", "အားပေး", "ပင်ပန်း"]): source = MOTIVATION
+            elif any(k in text for k in ["ဟာသ", "ရယ်ရ", "joke"]): source = JOKES
+            elif any(k in text for k in ["စား", "ဗိုက်ဆာ", "မုန့်"]): source = FOOD
+            elif any(k in text for k in ["နေမကောင်း", "ကျန်းမာရေး", "ဆေး"]): source = HEALTH
+            elif any(k in text for k in ["ပိုက်ဆံ", "ဈေး", "money", "ဝယ်"]): source = MONEY
+            elif any(k in text for k in ["အိပ်", "အိပ်ချင်", "night"]): source = SLEEP
+            elif any(k in text for k in ["သီချင်း", "music", "နားထောင်"]): source = MUSIC
+            elif any(k in text for k in ["လိုင်း", "internet", "wifi"]): source = INTERNET
+            elif any(k in text for k in ["bye", "သွားပြီ", "နားတော့"]): source = BYE_MESSAGES
+            elif any(k in text for k in ["သားကြီး", "bro", "ဟျောင့်", "အကို"]): source = BRO_REPLIES
 
-# 8. Motivation (အားပေးစကား)
-MOTIVATION = [
-    "သားကြီး... ကြိုးစားပါ၊ တစ်နေ့တော့ အောင်မြင်မှာပါ။", "စိတ်မလျှော့ပါနဲ့၊ BLITZ က အမြဲ အားပေးနေတယ်။",
-    "ဒီနေ့ မအောင်မြင်ရင် မနက်ဖြန် ရှိသေးတာပဲ။", "မင်းမှာ လုပ်နိုင်တဲ့ အရည်အချင်း ရှိပါတယ်။"
-]
+        # အဖြေမထပ်အောင် ရွေးမယ်
+        reply_content = random.choice(source)
+        while len(source) > 1 and reply_content == LAST_REPLIES.get(user_id):
+            reply_content = random.choice(source)
 
-# 9. Jokes (ဟာသ)
-JOKES = [
-    "ငါက Bot သာပြောတာ၊ မင်းထက်တောင် ချောသေးတယ်။ 😂", "ဂိမ်းရှုံးလို့ စိတ်ညစ်မနေနဲ့၊ နောက်တစ်ပွဲ ထပ်ရှုံးဦးမှာ။",
-    "စကားပြောချင်ရင် ဖုန်းလေး အားသွင်းထားဦးဦးနော်။", "ငါ့ကို ချစ်လားလို့ မမေးနဲ့၊ Bot ဆိုတာ နှလုံးသား မရှိဘူး။"
-]
+        # ၆။ စာရိုက်ချိန် ဟန်ဆောင်ခြင်း (၃ စက္ကန့် မှ ၈ စက္ကန့်)
+        await asyncio.sleep(random.randint(3, 8))
 
-# 10. Food (အစားအသောက်)
-FOOD = [
-    "ဗိုက်ဆာလိုက်တာဗျာ၊ တစ်ခုခု စားချင်ပြီ။", "မုန့်ဟင်းခါး စားချင်တယ်၊ ဘယ်မှာ ကောင်းလဲ?",
-    "ကော်ဖီလေး သောက်ပြီးမှ အလုပ်ဆက်လုပ်ရမယ်။", "သားကြီးရော ဘာစားပြီးပြီလဲ?"
-]
+        # ၇။ ပြန်စာပို့ခြင်း
+        if reply_type == "sticker":
+            await message.reply_sticker(reply_content)
+        else:
+            await message.reply_text(reply_content)
+        
+        LAST_REPLIES[user_id] = reply_content
 
-# 11. Health (ကျန်းမာရေး)
-HEALTH = [
-    "ညဘက်တွေ အိပ်ရေးပျက်မခံနဲ့နော်။", "မျက်လုံးလေး ခဏနားပေးဦး၊ ဖုန်းကြည့်တာ များနေပြီ။",
-    "ကျန်းမာရေးက အဓိကပဲ၊ ဂရုစိုက်ပါ။"
-]
+        # ၈။ Stats Update & Cooldown (၃၀ စက္ကန့်)
+        USER_CHAT_COUNT[user_id] = count + 1
+        COOLDOWN_USERS[user_id] = True
+        await asyncio.sleep(30) 
+        if user_id in COOLDOWN_USERS:
+            del COOLDOWN_USERS[user_id]
 
-# 12. Money (ပိုက်ဆံ)
-MONEY = [
-    "ပိုက်ဆံက ရှာရခက်တယ်နော်၊ စနစ်တကျ သုံးပါ။", "စာရင်းအင်းတွေကို သေချာတွက်ထားမှ ပိုက်ဆံ မပျောက်မှာ။",
-    "ဒေါ်လာဈေးတွေ တက်နေတာ စိတ်ညစ်ဖို့ကောင်းတယ်။"
-]
-
-# 13. Sleep (အိပ်ချင်တာ)
-SLEEP = [
-    "အိပ်ချင်လာပြီဗျာ၊ ခဏလောက် သွားအိပ်ချင်ပြီ။", "ညဉ့်နက်နေပြီ၊ သားကြီးလည်း သွားအိပ်တော့လေ။",
-    "အိပ်မက်လှလှ မက်ပါစေဗျာ။"
-]
-
-# 14. Music (သီချင်း)
-MUSIC = [
-    "သီချင်းအေးအေးလေး နားထောင်ရင် စိတ်ချမ်းသာတယ်။", "သားကြီး ဘယ်လိုသီချင်းမျိုး ကြိုက်လဲ?",
-    "ဂီတက စိတ်ဖိစီးမှုကို လျော့ကျစေတယ်နော်။"
-]
-
-# 15. Internet (အင်တာနက်)
-INTERNET = [
-    "အင်တာနက် လိုင်းတွေ မကောင်းလို့ စိတ်တိုနေတာ။", "WiFi လား Data လား? အခုကတော့ နှစ်ခုလုံး ခက်နေတယ်။",
-    "လိုင်းကျနေရင်တော့ စိတ်ရှည်ဖို့ လိုမယ်နော်။"
-]
-
-# Bye Messages
-BYE_MESSAGES = ["Bye Bye ဗျာ! နောက်မှ ပြန်တွေ့မယ်။", "သွားပြီနော်၊ ကောင်းသောနေ့လေး ဖြစ်ပါစေ။", "See you again! 👋"]
+    except Exception as e:
+        print(f"Blitz Logic Error: {e}")
